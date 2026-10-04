@@ -25,14 +25,62 @@ export default function ExecutionDetailPage() {
   const { mode, triggerRetry } = useDemoState();
   const executionId = (params?.id as string) || "EX-2048";
 
-  // Check if execution exists in mock dataset
+  const [customExecutions, setCustomExecutions] = React.useState<Execution[]>([]);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = JSON.parse(localStorage.getItem("blackbox_custom_executions") || "[]");
+        setCustomExecutions(stored);
+      } catch {}
+    }
+  }, []);
+
+  // Check if execution exists in custom or mock dataset
   const foundExecution = React.useMemo(() => {
-    return MOCK_EXECUTIONS.find(
+    const all = [...customExecutions, ...MOCK_EXECUTIONS];
+    const match = all.find(
       (e) => e.id.toLowerCase() === executionId.toLowerCase()
     );
-  }, [executionId]);
 
-  const execution: Execution = foundExecution || MOCK_EXECUTIONS[0];
+    const baseTemplate = MOCK_EXECUTIONS[0]; // EX-2048 high-fidelity flight recording
+
+    if (match) {
+      // If match has complete regions and steps, return directly
+      if (
+        match.regions &&
+        match.regions.length > 0 &&
+        match.regions[0].steps &&
+        match.regions[0].steps.length > 0
+      ) {
+        return match;
+      }
+      // Otherwise merge with base flight telemetry so all charts & steps render smoothly
+      return {
+        ...baseTemplate,
+        ...match,
+        id: executionId,
+        regions: baseTemplate.regions.map((r) => ({
+          ...r,
+          executionId: executionId,
+        })),
+      };
+    }
+
+    // Zero-Crash Demo Protection:
+    // If ANY execution ID (e.g. EX-6695) is queried, dynamically synthesize its flight recorder payload
+    return {
+      ...baseTemplate,
+      id: executionId,
+      triggerPrompt: `Mission execution telemetry record for ${executionId}`,
+      regions: baseTemplate.regions.map((r) => ({
+        ...r,
+        executionId: executionId,
+      })),
+    };
+  }, [executionId, customExecutions]);
+
+  const execution: Execution = foundExecution;
   const isFailed = execution.status === "failed";
 
   // Identify default selected region (anomalous region if failed, or first region if nominal)
@@ -43,7 +91,7 @@ export default function ExecutionDetailPage() {
       );
       if (anomalous) return anomalous;
     }
-    return execution.regions[0];
+    return execution.regions[0] || MOCK_EXECUTIONS[0].regions[0];
   }, [execution, isFailed]);
 
   const [selectedRegion, setSelectedRegion] = React.useState<ExecutionRegion>(defaultRegion);
@@ -66,20 +114,20 @@ export default function ExecutionDetailPage() {
     );
   }
 
-  // Not Found / Error state
-  if (!foundExecution || mode === "error") {
+  // Error state only if mode explicitly set to error
+  if (mode === "error") {
     return (
       <div className="space-y-6 max-w-3xl mx-auto pt-10 pb-16 font-mono">
         <ErrorState
-          title="Execution not found"
-          message={`Execution "${executionId}" could not be found in workspace Cham Cham. It may have expired or was purged by retention policy.`}
+          title="Telemetry Stream Disrupted"
+          message={`Unable to connect to live telemetry flight recorder stream for execution "${executionId}".`}
           details={{
             queriedId: executionId,
             workspace: "cham-cham",
             lookupTimestamp: new Date().toISOString(),
           }}
           onRetry={triggerRetry}
-          retryLabel="Retry Lookup"
+          retryLabel="Retry Connection"
           secondaryAction={{
             label: "Back to Executions",
             href: "/dashboard/executions",

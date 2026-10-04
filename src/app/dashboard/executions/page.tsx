@@ -71,11 +71,30 @@ export default function ExecutionsPage() {
     }
   };
 
+  const [customExecutions, setCustomExecutions] = React.useState<Execution[]>([]);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = JSON.parse(localStorage.getItem("blackbox_custom_executions") || "[]");
+        setCustomExecutions(stored);
+      } catch {}
+    }
+  }, []);
+
   // Filter and sort executions
   const filteredAndSortedExecutions = React.useMemo(() => {
     if (simulateEmptyFirstTime) return [];
 
-    let result = [...MOCK_EXECUTIONS];
+    const all = [...customExecutions, ...MOCK_EXECUTIONS];
+    const seen = new Set<string>();
+    let result: Execution[] = [];
+    for (const ex of all) {
+      if (!seen.has(ex.id)) {
+        seen.add(ex.id);
+        result.push(ex);
+      }
+    }
 
     // Filter by Search
     if (filters.search.trim()) {
