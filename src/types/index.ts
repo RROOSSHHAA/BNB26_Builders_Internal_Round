@@ -177,6 +177,7 @@ export interface Diagnosis {
   simulatedRecoveryRate?: number;
   detectedAt: string;
   status?: "failed" | "in_review" | "resolved";
+  modelVersion?: string; // e.g. "Diagnosis Model v2.0 - Causal Graph Net"
 }
 
 export interface Execution {

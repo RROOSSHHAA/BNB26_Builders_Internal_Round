@@ -313,10 +313,15 @@ function ComparisonsContent() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5">
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5 flex-wrap">
                       <span>Agent: {activeComparison.agentName}</span>
                       <span>•</span>
                       <span>Framework: {activeComparison.framework}</span>
+                      <span>•</span>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                        <Sparkles className="w-2.5 h-2.5 text-cyan-400" />
+                        Diagnosis Model v2.0
+                      </span>
                       <span>•</span>
                       <span>Analyzed {activeComparison.createdAtAgo}</span>
                     </div>

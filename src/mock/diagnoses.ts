@@ -44,6 +44,7 @@ export const MOCK_DIAGNOSES: Diagnosis[] = [
     simulatedRecoveryRate: 0.94,
     detectedAt: "2026-10-03T18:42:25Z",
     status: "failed",
+    modelVersion: "Diagnosis Model v2.0 - Causal Graph Net",
   },
   {
     id: "diag_ex2046",
@@ -82,6 +83,7 @@ export const MOCK_DIAGNOSES: Diagnosis[] = [
     },
     detectedAt: "2026-10-03T18:15:20Z",
     status: "failed",
+    modelVersion: "Diagnosis Model v1.1 - Bayesian Tracer",
   },
   {
     id: "diag_ex2045",
@@ -120,6 +122,7 @@ export const MOCK_DIAGNOSES: Diagnosis[] = [
     },
     detectedAt: "2026-10-03T17:20:30Z",
     status: "failed",
+    modelVersion: "Diagnosis Model v2.0 - Causal Graph Net",
   },
   {
     id: "diag_ex2043",
@@ -158,6 +161,7 @@ export const MOCK_DIAGNOSES: Diagnosis[] = [
     },
     detectedAt: "2026-10-03T15:10:25Z",
     status: "failed",
+    modelVersion: "Diagnosis Model v1.0 - Heuristic Rule Engine",
   },
   {
     id: "diag_ex2041",
@@ -196,6 +200,7 @@ export const MOCK_DIAGNOSES: Diagnosis[] = [
     },
     detectedAt: "2026-10-03T12:20:10Z",
     status: "failed",
+    modelVersion: "Diagnosis Model v1.1 - Bayesian Tracer",
   },
   {
     id: "diag_ex2039",
@@ -234,6 +239,7 @@ export const MOCK_DIAGNOSES: Diagnosis[] = [
     },
     detectedAt: "2026-10-03T07:30:15Z",
     status: "failed",
+    modelVersion: "Diagnosis Model v2.0 - Causal Graph Net",
   },
 ];
 

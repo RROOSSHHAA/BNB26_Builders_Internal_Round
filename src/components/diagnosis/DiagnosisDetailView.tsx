@@ -69,6 +69,10 @@ export function DiagnosisDetailView({
               <span className="text-xs font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20 font-semibold">
                 FAILED
               </span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/25 font-medium">
+                <Sparkles className="h-3 w-3 text-cyan-400" />
+                <span>{diagnosis.modelVersion || "Diagnosis Model v2.0 - Causal Graph Net"}</span>
+              </span>
             </div>
           </div>
 

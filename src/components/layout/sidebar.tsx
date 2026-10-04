@@ -180,6 +180,13 @@ export function Sidebar({ className, isMobileOpen, onMobileClose }: SidebarProps
       label: "SYSTEM",
       items: [
         {
+          title: "Security & Privacy",
+          href: "/dashboard/security",
+          icon: ShieldCheck,
+          badge: "Active",
+          badgeColor: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+        },
+        {
           title: "History",
           href: "/dashboard/history",
           icon: History,

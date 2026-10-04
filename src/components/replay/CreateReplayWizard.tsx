@@ -696,15 +696,21 @@ export function CreateReplayWizard({
 
                   <SafetyNotice />
 
-                  {/* Simulation Progress States */}
+                  {/* Simulation Progress States - 5 Explicit Sandbox Stages */}
                   {isSimulating && (
                     <div className="rounded-xl border border-cyan-500/30 bg-[#090f1d] p-5 space-y-3 font-mono text-xs">
-                      <div className="flex items-center gap-2 text-cyan-300 font-semibold mb-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
-                        <span>Simulating Replay Execution Path...</span>
+                      <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2 mb-2">
+                        <div className="flex items-center gap-2 text-cyan-300 font-semibold">
+                          <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
+                          <span>Isolated Sandbox Replay Pipeline</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-400">
+                          Original {activeExecution.id} Immutable
+                        </span>
                       </div>
 
-                      <div className="space-y-2 pl-2">
+                      <div className="space-y-2.5 pl-2">
+                        {/* 1. Sandbox Created */}
                         <div
                           className={`flex items-center gap-2 ${
                             simStage >= 1 ? "text-emerald-400" : "text-zinc-500"
@@ -715,8 +721,12 @@ export function CreateReplayWizard({
                           ) : (
                             <span className="h-1.5 w-1.5 rounded-full bg-zinc-600 shrink-0" />
                           )}
-                          <span>Preparing checkpoint snapshot (Step {selectedCheckpoint})</span>
+                          <span>
+                            <strong>1. Sandbox Created</strong> — Ephemeral container initialized; original {activeExecution.id} frozen
+                          </span>
                         </div>
+
+                        {/* 2. Replay Running */}
                         <div
                           className={`flex items-center gap-2 ${
                             simStage >= 2 ? "text-emerald-400" : "text-zinc-500"
@@ -727,23 +737,28 @@ export function CreateReplayWizard({
                           ) : (
                             <span className="h-1.5 w-1.5 rounded-full bg-zinc-600 shrink-0" />
                           )}
-                          <span>Restoring state vector & memory registers</span>
+                          <span>
+                            <strong>2. Replay Running</strong> — Restoring checkpoint memory registers from Step {selectedCheckpoint}
+                          </span>
                         </div>
+
+                        {/* 3. Correction Applied */}
                         <div
                           className={`flex items-center gap-2 ${
                             simStage >= 3 ? "text-cyan-300 font-medium" : "text-zinc-500"
                           }`}
                         >
                           {simStage >= 3 ? (
-                            <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+                            <Check className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
                           ) : (
                             <span className="h-1.5 w-1.5 rounded-full bg-zinc-600 shrink-0" />
                           )}
                           <span>
-                            Replaying downstream steps ({selectedCheckpoint + 1} →{" "}
-                            {activeExecution.totalSteps}) with patched rule
+                            <strong>3. Correction Applied</strong> — Patched intermediate rule injected at Step {selectedTargetStep}
                           </span>
                         </div>
+
+                        {/* 4. Verification */}
                         <div
                           className={`flex items-center gap-2 ${
                             simStage >= 4 ? "text-purple-300" : "text-zinc-500"
@@ -754,7 +769,9 @@ export function CreateReplayWizard({
                           ) : (
                             <span className="h-1.5 w-1.5 rounded-full bg-zinc-600 shrink-0" />
                           )}
-                          <span>Comparing divergence delta against baseline</span>
+                          <span>
+                            <strong>4. Verification</strong> — Validating downstream state convergence against nominal baseline
+                          </span>
                         </div>
                       </div>
                     </div>

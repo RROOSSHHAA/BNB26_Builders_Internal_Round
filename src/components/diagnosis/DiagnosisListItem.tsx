@@ -77,6 +77,11 @@ export function DiagnosisListItem({
         <div className="flex items-center gap-1.5 text-zinc-300 font-medium">
           <Flame className="h-3 w-3 text-zinc-400" />
           <span>{confidencePercent}% confidence</span>
+          {diagnosis.modelVersion && (
+            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 ml-1">
+              {diagnosis.modelVersion.split(" - ")[0]}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
