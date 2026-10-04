@@ -357,8 +357,8 @@ export function DiagnosisNextStepsSection({ diagnosis }: { diagnosis: Diagnosis 
         }
       >
         <div className="space-y-3 text-xs font-mono text-zinc-300">
-          <p className="font-sans text-zinc-400">
-            This will launch the Black Box Replay Sandbox, injecting the recommended prompt diff to evaluate if the agent successfully recovers.
+          <p className="font-sans text-zinc-300">
+            This will launch the Black Box Replay Sandbox, verify counterfactual recovery, hotpatch the AI model directly, and generate a downloadable verified model bundle (.json, .py, .txt).
           </p>
         </div>
       </Modal>

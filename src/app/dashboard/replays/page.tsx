@@ -8,6 +8,7 @@ import {
 import { ReplayInvestigation } from "@/types";
 import { CheckpointFlowIndicator } from "@/components/replay/CheckpointFlowIndicator";
 import { OriginalVsReplayMap } from "@/components/replay/OriginalVsReplayMap";
+import { DirectModelFixAndDownloadBox } from "@/components/replay/DirectModelFixAndDownloadBox";
 import { ReplayList } from "@/components/replay/ReplayList";
 import { ReplayDetailDrawer } from "@/components/replay/ReplayDetailDrawer";
 import { CreateReplayWizard } from "@/components/replay/CreateReplayWizard";
@@ -237,6 +238,15 @@ function ReplaysContent() {
                   finalResultText={activeShowcaseReplay.finalResultText}
                   originalResult={activeShowcaseReplay.originalResult}
                   replayResult={activeShowcaseReplay.replayResult}
+                />
+
+                {/* Direct Model Hotpatch & Verified Artifact Download Center */}
+                <DirectModelFixAndDownloadBox
+                  replay={activeShowcaseReplay}
+                  onHotpatchComplete={(agentName) => {
+                    // Update state to trigger smooth UI refresh
+                    setReplays((prev) => [...prev]);
+                  }}
                 />
 
                 {/* Investigation Deep Dive Bar */}

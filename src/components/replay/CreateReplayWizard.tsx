@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation";
 import { ReplayInvestigation, ReplayModificationType, Execution } from "@/types";
 import { CheckpointFlowIndicator } from "./CheckpointFlowIndicator";
 import { OriginalVsReplayMap } from "./OriginalVsReplayMap";
+import { DirectModelFixAndDownloadBox } from "./DirectModelFixAndDownloadBox";
 import { SafetyNotice } from "./SafetyNotice";
 
 interface CreateReplayWizardProps {
@@ -798,6 +799,48 @@ export function CreateReplayWizard({
                     finalResultText="Failed → Successful"
                     originalResult="FAILED"
                     replayResult="SUCCESS"
+                  />
+
+                  {/* Direct Model Hotpatch & Verified Artifact Download Center */}
+                  <DirectModelFixAndDownloadBox
+                    replay={{
+                      id: `RP-${Date.now().toString().slice(-4)}`,
+                      agentName: activeExecution.agentName,
+                      agentId: activeExecution.agentName,
+                      framework: activeExecution.framework,
+                      originalExecutionId: activeExecution.id,
+                      totalSteps: activeExecution.totalSteps,
+                      checkpointStep: selectedCheckpoint,
+                      modifiedStep: selectedTargetStep,
+                      modifiedStepTitle: `Patch rule for Step ${selectedTargetStep}`,
+                      modificationType: modificationType,
+                      originalResult: "FAILED",
+                      replayResult: "SUCCESS",
+                      status: "completed",
+                      createdAtAgo: "Just now",
+                      createdAt: new Date().toISOString(),
+                      stepsReused: selectedCheckpoint,
+                      stepsReplayed: activeExecution.totalSteps - selectedCheckpoint,
+                      downstreamAffectedSteps: 54,
+                      outcomeSummary: `Step ${selectedTargetStep} validation rule patched and alternative path converged successfully.`,
+                      originalPayloadSnippet: defaultOriginalJson,
+                      modifiedPayloadSnippet: alternativeJson,
+                      originalRegions: [
+                        { name: "Retrieval", range: "1–28", status: "ok" },
+                        { name: "Reasoning", range: "29–61", status: "ok" },
+                        { name: "Validation", range: "62–78", status: "warn" },
+                        { name: "Finalization", range: "79–127", status: "fail" },
+                      ],
+                      replayRegions: [
+                        { name: "Retrieval", range: "1–28", status: "ok" },
+                        { name: "Reasoning", range: "29–61", status: "ok" },
+                        { name: "Validation", range: "62–78", status: "ok" },
+                        { name: "Finalization", range: "79–127", status: "ok" },
+                      ],
+                      whatChanged: `Step ${selectedTargetStep} validation rule patched to clamp datetime window and allow valid structured JSON`,
+                      downstreamEffect: `Finalization region (Steps ${selectedCheckpoint + 1}–${activeExecution.totalSteps}) fully recovered`,
+                      finalResultText: "Failed → Successful",
+                    }}
                   />
                 </div>
               )}

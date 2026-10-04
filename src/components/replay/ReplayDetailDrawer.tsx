@@ -22,6 +22,7 @@ import {
 import { ReplayInvestigation } from "@/types";
 import { CheckpointFlowIndicator } from "./CheckpointFlowIndicator";
 import { OriginalVsReplayMap } from "./OriginalVsReplayMap";
+import { DirectModelFixAndDownloadBox } from "./DirectModelFixAndDownloadBox";
 import { SafetyNotice } from "./SafetyNotice";
 
 interface ReplayDetailDrawerProps {
@@ -135,6 +136,9 @@ export function ReplayDetailDrawer({
           originalResult={replay.originalResult}
           replayResult={replay.replayResult}
         />
+
+        {/* Direct Model Hotpatch & Verified Artifact Download Center */}
+        <DirectModelFixAndDownloadBox replay={replay} />
 
         {/* Code / Payload Diff Comparison */}
         {(replay.originalPayloadSnippet || replay.modifiedPayloadSnippet) && (

@@ -28,6 +28,8 @@ import {
   Play,
   Server,
   Zap,
+  Download,
+  ShieldCheck,
 } from "lucide-react";
 import { useDemoState } from "@/context/DemoStateContext";
 import { AssignTaskModal } from "@/components/agent/AssignTaskModal";
@@ -111,6 +113,42 @@ export default function AgentDetailPage() {
     setCustomExecutions((prev) => [newExec, ...prev]);
   };
 
+  const [downloadNotice, setDownloadNotice] = React.useState<string | null>(null);
+
+  const handleDownloadFixedModel = () => {
+    try {
+      const bundle = {
+        blackbox_version: "2.5.0-production",
+        model_name: agent.name,
+        framework: agent.framework,
+        model: agent.model,
+        status: "VERIFIED_HARDENED",
+        audit_hash: `sha256-bb-${Date.now().toString(16)}`,
+        hardened_prompt: `// BLACKBOX HARDENED SYSTEM PROMPT\n// TARGET AGENT: ${agent.name}\nYou are ${agent.name}. Operate with strict deterministic schema clamping and resilience retries.`,
+        resilience_policy: {
+          max_retries: 3,
+          backoff_multiplier: 1.5,
+          fallback_provider: "deepseek-v3",
+        },
+        timestamp: new Date().toISOString(),
+      };
+      const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${agent.name.toLowerCase().replace(/\s+/g, "_")}_fixed_model_package.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setDownloadNotice("Downloaded Bundle!");
+      setTimeout(() => setDownloadNotice(null), 3000);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // Loading state
   if (mode === "loading") {
     return (
@@ -183,7 +221,17 @@ export default function AgentDetailPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 self-start sm:self-center">
+          <div className="flex items-center gap-2.5 self-start sm:self-center flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadFixedModel}
+              className="font-sans font-medium text-xs border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 flex items-center gap-1.5 shadow-sm"
+            >
+              <Download className="h-3.5 w-3.5 text-emerald-400" />
+              <span>{downloadNotice || "Download Model Bundle"}</span>
+            </Button>
+
             <Link href={`/dashboard/executions?agent=${agent.id}`}>
               <Button variant="outline" size="sm" className="font-sans font-medium text-xs border-white/[0.08] text-zinc-200 hover:border-white/20 hover:text-white">
                 <span>View Traces</span>
