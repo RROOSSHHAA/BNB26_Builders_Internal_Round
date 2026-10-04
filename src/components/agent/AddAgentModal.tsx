@@ -418,9 +418,7 @@ export function AddAgentModal({
                   }}
                   className="hidden"
                   id="model-folder-upload-input"
-                  // @ts-ignore
-                  webkitdirectory=""
-                  directory=""
+                  {...({ webkitdirectory: "", directory: "" } as any)}
                   multiple
                 />
                 <Button
