@@ -10,7 +10,7 @@ import { AddAgentModal } from "@/components/agent/AddAgentModal";
 import { ImportAgentModal } from "@/components/agent/ImportAgentModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Bot, Radio, RotateCcw, FilterX, UploadCloud } from "lucide-react";
+import { Plus, Bot, Radio, RotateCcw, FilterX, UploadCloud, Sparkles, Rocket, Play } from "lucide-react";
 import { useDemoState } from "@/context/DemoStateContext";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
@@ -203,18 +203,59 @@ export default function AgentsPage() {
             className="font-sans font-medium text-xs border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 hover:border-cyan-400 flex items-center gap-1.5 shadow-sm"
           >
             <UploadCloud className="h-3.5 w-3.5 text-cyan-400" />
-            <span>Upload / BYO Agent</span>
+            <span>Upload Manifest</span>
           </Button>
 
           <Button
             variant="primary"
             size="sm"
             onClick={() => setIsAddModalOpen(true)}
-            className="font-sans font-medium text-xs shadow-xs"
+            className="font-sans font-medium text-xs bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-md border-0 flex items-center gap-1.5"
           >
-            <Plus className="h-3.5 w-3.5 mr-1.5" />
-            <span>Add Agent</span>
+            <Rocket className="h-3.5 w-3.5" />
+            <span>Deploy Custom Model</span>
           </Button>
+        </div>
+      </div>
+
+      {/* Hero Banner: Bring Your Own Agent & Deploy Custom Model */}
+      <div className="relative overflow-hidden rounded-2xl border border-blue-500/25 bg-gradient-to-r from-blue-950/40 via-[#0e1424] to-indigo-950/30 p-5 sm:p-6 backdrop-blur-xl">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                <Sparkles className="w-3 h-3 text-blue-400" />
+                BYOA & Custom Model Runner
+              </span>
+              <span className="text-xs text-zinc-400">Interactive Testing Environment</span>
+            </div>
+            <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2">
+              Bring Your Own Agent & Run Live Missions
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+              Connect external AI agents (DeepSeek V3, Llama 3.3, Ollama, Cloud Run or custom endpoints), assign a test task, and inspect blackbox flight telemetry, incident diagnosis, and replay loops in real time.
+            </p>
+          </div>
+          <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsImportModalOpen(true)}
+              className="text-xs border-white/10 hover:bg-white/5 text-zinc-300"
+            >
+              Upload Manifest
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setIsAddModalOpen(true)}
+              className="text-xs bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 flex items-center gap-1.5"
+            >
+              <Play className="w-3 h-3 fill-white" />
+              Deploy Model & Assign Task
+            </Button>
+          </div>
         </div>
       </div>
 
