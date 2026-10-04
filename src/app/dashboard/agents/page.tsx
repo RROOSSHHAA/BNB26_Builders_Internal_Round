@@ -8,9 +8,10 @@ import { AgentCard } from "@/components/agent/AgentCard";
 import { AgentFilterBar, AgentFilterState } from "@/components/agent/AgentFilterBar";
 import { AddAgentModal } from "@/components/agent/AddAgentModal";
 import { ImportAgentModal } from "@/components/agent/ImportAgentModal";
+import { ModelFolderInspectorModal } from "@/components/agent/ModelFolderInspectorModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Bot, Radio, RotateCcw, FilterX, UploadCloud, Sparkles, Rocket, Play } from "lucide-react";
+import { Plus, Bot, Radio, RotateCcw, FilterX, UploadCloud, Sparkles, Rocket, Play, Folder, FolderOpen } from "lucide-react";
 import { useDemoState } from "@/context/DemoStateContext";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
@@ -22,6 +23,9 @@ export default function AgentsPage() {
   const [agents, setAgents] = React.useState<Agent[]>(MOCK_AGENTS);
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = React.useState(false);
+  const [selectedFolderAgent, setSelectedFolderAgent] = React.useState<Agent | null>(null);
+  const [isFolderModalOpen, setIsFolderModalOpen] = React.useState(false);
+  const [activeFolderFilter, setActiveFolderFilter] = React.useState<string>("all");
   const [simulateEmpty, setSimulateEmpty] = React.useState(false);
 
   React.useEffect(() => {
@@ -199,6 +203,16 @@ export default function AgentsPage() {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setIsAddModalOpen(true)}
+            className="font-sans font-medium text-xs border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:border-amber-400 flex items-center gap-1.5 shadow-sm"
+          >
+            <FolderOpen className="h-3.5 w-3.5 text-amber-400" />
+            <span>📁 Upload Model Folder</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setIsImportModalOpen(true)}
             className="font-sans font-medium text-xs border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 hover:border-cyan-400 flex items-center gap-1.5 shadow-sm"
           >
@@ -302,6 +316,38 @@ export default function AgentsPage() {
         </div>
       </div>
 
+      {/* Model Folders & Workspace Groups Bar */}
+      <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1 text-xs font-sans">
+        <div className="flex items-center gap-1.5 bg-[#0a0e16] p-1 rounded-xl border border-white/[0.08]">
+          {[
+            { id: "all", label: `📁 All Agent Squads (${agents.length})` },
+            { id: "custom", label: `📁 Custom Uploaded Folders (${agents.filter(a => a.tags?.includes("model-folder") || a.tags?.includes("custom-deployed")).length || 2})` },
+            { id: "production", label: "📁 Production Squads (4)" },
+            { id: "defi", label: "📁 DeFi & Risk Models (2)" },
+          ].map((folder) => (
+            <button
+              key={folder.id}
+              onClick={() => setActiveFolderFilter(folder.id)}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-medium whitespace-nowrap ${
+                activeFolderFilter === folder.id
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
+              }`}
+            >
+              <span>{folder.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 text-xs font-medium shrink-0 transition-colors"
+        >
+          <FolderOpen className="w-3.5 h-3.5" />
+          <span>Upload Model Folder</span>
+        </button>
+      </div>
+
       {/* 3. Filter & Search Controls */}
       <AgentFilterBar
         filters={filters}
@@ -342,7 +388,13 @@ export default function AgentsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.15, delay: Math.min(index * 0.04, 0.3) }}
             >
-              <AgentCard agent={agent} />
+              <AgentCard
+                agent={agent}
+                onOpenFolder={(ag) => {
+                  setSelectedFolderAgent(ag);
+                  setIsFolderModalOpen(true);
+                }}
+              />
             </motion.div>
           ))}
         </div>
@@ -360,6 +412,13 @@ export default function AgentsPage() {
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         onAddAgent={handleAddAgent}
+      />
+
+      {/* 7. Model Folder Inspector & Deep Analyzer Modal */}
+      <ModelFolderInspectorModal
+        isOpen={isFolderModalOpen}
+        onClose={() => setIsFolderModalOpen(false)}
+        agent={selectedFolderAgent}
       />
     </div>
   );

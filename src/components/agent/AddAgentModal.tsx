@@ -22,6 +22,9 @@ import {
   Globe,
   Sliders,
   CheckCircle2,
+  Folder,
+  FolderOpen,
+  FileCode,
 } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/api-client";
@@ -40,7 +43,17 @@ export function AddAgentModal({
   const router = useRouter();
   const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = React.useState<"custom_deploy" | "quick_preset">("custom_deploy");
+  const [activeTab, setActiveTab] = React.useState<"model_folder" | "custom_deploy" | "quick_preset">("model_folder");
+  const folderInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  // Model Folder States
+  const [modelFolderPath, setModelFolderPath] = React.useState("models/deepseek-risk-v1");
+  const [folderFiles, setFolderFiles] = React.useState<Array<{ name: string; size: string; path: string }>>([
+    { name: "agent.py", size: "3.4 KB", path: "src/agent.py" },
+    { name: "model_config.json", size: "1.1 KB", path: "config/model_config.json" },
+    { name: "system_prompt.txt", size: "820 B", path: "prompts/system_prompt.txt" },
+    { name: "tools.py", size: "2.1 KB", path: "src/tools.py" },
+  ]);
 
   // Form State
   const [name, setName] = React.useState("DeepSeek Risk Auditor Agent");
@@ -91,7 +104,11 @@ export function AddAgentModal({
     }
 
     setIsExecutingTest(true);
-    setTestLogs(["[00:00.120] Deploying custom model container into BlackBox runtime..."]);
+    setTestLogs([
+      activeTab === "model_folder"
+        ? `[00:00.120] Reading local model directory: ${modelFolderPath}...`
+        : "[00:00.120] Deploying custom model container into BlackBox runtime...",
+    ]);
 
     const agentId = `agt_${Date.now()}`;
     const execId = `EX-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -99,7 +116,9 @@ export function AddAgentModal({
     setTimeout(() => {
       setTestLogs((prev) => [
         ...prev,
-        `[00:00.580] Connected model: ${model} via ${customModelSource.toUpperCase()}`,
+        activeTab === "model_folder"
+          ? `[00:00.580] Audited 4 files (agent.py, config, prompt, tools) with AST parser`
+          : `[00:00.580] Connected model: ${model} via ${customModelSource.toUpperCase()}`,
         `[00:00.820] Injected ${selectedTools.length} tools & registered BlackBox flight telemetry hooks`,
       ]);
     }, 800);
@@ -284,17 +303,33 @@ export function AddAgentModal({
               size="sm"
               onClick={handleDeployAndRunTest}
               disabled={isExecutingTest || !name.trim()}
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md"
+              className={`text-white font-semibold text-xs flex items-center gap-1.5 shadow-md ${
+                activeTab === "model_folder"
+                  ? "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500"
+                  : "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500"
+              }`}
             >
               {isExecutingTest ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>Deploying & Executing Task...</span>
+                  <span>
+                    {activeTab === "model_folder"
+                      ? "Auditing Folder & Running Telemetry..."
+                      : "Deploying & Executing Task..."}
+                  </span>
                 </>
               ) : (
                 <>
-                  <Play className="h-3.5 w-3.5 fill-white" />
-                  <span>Deploy Model & Run Test</span>
+                  {activeTab === "model_folder" ? (
+                    <FolderOpen className="h-3.5 w-3.5" />
+                  ) : (
+                    <Play className="h-3.5 w-3.5 fill-white" />
+                  )}
+                  <span>
+                    {activeTab === "model_folder"
+                      ? "Add Model Folder & Run Analysis"
+                      : "Deploy Model & Run Test"}
+                  </span>
                 </>
               )}
             </Button>
@@ -304,35 +339,143 @@ export function AddAgentModal({
     >
       <div className="space-y-4">
         {/* Tab Switcher */}
-        <div className="flex items-center gap-2 border-b border-white/[0.08] pb-3 text-xs font-sans">
+        <div className="flex items-center gap-2 border-b border-white/[0.08] pb-3 text-xs font-sans overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setActiveTab("model_folder")}
+            disabled={isExecutingTest}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              activeTab === "model_folder"
+                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <FolderOpen className="h-3.5 w-3.5 text-amber-400" />
+            <span>📁 Upload Model Folder</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setActiveTab("custom_deploy")}
             disabled={isExecutingTest}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap ${
               activeTab === "custom_deploy"
                 ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
             <Bot className="h-3.5 w-3.5 text-cyan-400" />
-            <span>🚀 Deploy Custom Model & Test</span>
+            <span>🚀 Custom API / Endpoint</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab("quick_preset")}
             disabled={isExecutingTest}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap ${
               activeTab === "quick_preset"
                 ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
             <Sliders className="h-3.5 w-3.5" />
-            <span>⚡ Quick Preset (GPT-4o / Claude)</span>
+            <span>⚡ Quick Preset (GPT-4o)</span>
           </button>
         </div>
+
+        {/* Folder Upload Tab Content */}
+        {activeTab === "model_folder" && (
+          <div className="space-y-3">
+            <div className="rounded-xl border border-dashed border-amber-500/30 bg-amber-500/[0.04] p-4 text-center space-y-2">
+              <div className="flex justify-center">
+                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  <FolderOpen className="h-6 w-6" />
+                </div>
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white font-sans">
+                  Select or Drag Model Folder / Local Repository
+                </h4>
+                <p className="text-[11px] text-zinc-400 font-sans mt-0.5">
+                  Folder must contain agent code (e.g. <span className="text-amber-300 font-mono">agent.py</span>), config (<span className="text-amber-300 font-mono">model_config.json</span>), or prompts.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 pt-1">
+                <input
+                  type="file"
+                  ref={folderInputRef}
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      const fileList = Array.from(e.target.files).slice(0, 6).map((f) => ({
+                        name: f.name,
+                        size: `${(f.size / 1024).toFixed(1)} KB`,
+                        path: f.webkitRelativePath || f.name,
+                      }));
+                      setFolderFiles(fileList);
+                      setModelFolderPath(e.target.files[0].webkitRelativePath?.split("/")[0] || "my-custom-model");
+                    }
+                  }}
+                  className="hidden"
+                  id="model-folder-upload-input"
+                  // @ts-ignore
+                  webkitdirectory=""
+                  directory=""
+                  multiple
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => folderInputRef.current?.click()}
+                  className="text-xs border-amber-500/40 text-amber-300 hover:bg-amber-500/10 font-sans"
+                >
+                  <Folder className="h-3.5 w-3.5 mr-1" />
+                  <span>Browse Model Directory</span>
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModelFolderPath("models/deepseek-risk-v1");
+                    setFolderFiles([
+                      { name: "agent.py", size: "3.4 KB", path: "src/agent.py" },
+                      { name: "model_config.json", size: "1.1 KB", path: "config/model_config.json" },
+                      { name: "system_prompt.txt", size: "820 B", path: "prompts/system_prompt.txt" },
+                      { name: "tools.py", size: "2.1 KB", path: "src/tools.py" },
+                    ]);
+                  }}
+                  className="text-[11px] text-zinc-400 hover:text-white underline font-mono"
+                >
+                  Use Sample Folder
+                </button>
+              </div>
+            </div>
+
+            {/* Detected Files in Folder */}
+            <div className="rounded-xl border border-white/[0.08] bg-[#0c1017] p-3 space-y-2">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-zinc-400">Target Folder:</span>
+                <span className="text-amber-300 font-semibold">{modelFolderPath}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                {folderFiles.map((file, idx) => (
+                  <div
+                    key={idx}
+                    className="p-2 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-between text-[11px] font-mono"
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <FileCode className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                      <span className="text-zinc-300 truncate">{file.name}</span>
+                    </div>
+                    <span className="text-[10px] text-zinc-500">{file.size}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Basic Agent Metadata */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

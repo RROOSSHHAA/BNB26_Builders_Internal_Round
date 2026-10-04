@@ -18,13 +18,15 @@ import {
   ChevronRight,
   CheckCircle2,
   XCircle,
+  Folder,
 } from "lucide-react";
 
 interface AgentCardProps {
   agent: Agent;
+  onOpenFolder?: (agent: Agent) => void;
 }
 
-export function AgentCard({ agent }: AgentCardProps) {
+export function AgentCard({ agent, onOpenFolder }: AgentCardProps) {
   const router = useRouter();
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -126,19 +128,34 @@ export function AgentCard({ agent }: AgentCardProps) {
           <span>Last run: {formatRelativeTime(agent.lastRunAt)}</span>
         </div>
 
-        <Link
-          href={`/dashboard/agents/${agent.id}`}
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            className="font-sans font-medium text-xs border-white/[0.08] text-zinc-200 hover:border-white/20 hover:text-white"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onOpenFolder) onOpenFolder(agent);
+            }}
+            className="font-sans font-medium text-xs border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:border-amber-500/50 flex items-center gap-1.5"
           >
-            <span>View Agent</span>
-            <ArrowRight className="h-3 w-3 ml-1" />
+            <Folder className="h-3.5 w-3.5 text-amber-400" />
+            <span>Folder</span>
           </Button>
-        </Link>
+
+          <Link
+            href={`/dashboard/agents/${agent.id}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              variant="outline"
+              size="sm"
+              className="font-sans font-medium text-xs border-white/[0.08] text-zinc-200 hover:border-white/20 hover:text-white"
+            >
+              <span>View Agent</span>
+              <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );
