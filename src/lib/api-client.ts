@@ -193,6 +193,22 @@ class ApiClient {
     return this.request<any>(`/agents/${id}`);
   }
 
+  public async createAgent(data: {
+    name: string;
+    framework: string;
+    model?: string;
+    description?: string;
+    workspaceId?: string;
+  }) {
+    await this.ensureAuthenticated();
+    const ws = await this.getWorkspaces().catch(() => []);
+    const workspaceId = data.workspaceId || ws[0]?.id || "ws_autonomous_ops";
+    return this.request<any>("/agents", {
+      method: "POST",
+      body: JSON.stringify({ ...data, workspaceId }),
+    });
+  }
+
   // ==========================================
   // 5. EXECUTIONS
   // ==========================================
