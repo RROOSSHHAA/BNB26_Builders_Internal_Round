@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Execution } from "@/types";
-import { SearchAlert, Play, GitFork, Sparkles, Terminal, Info, AlertTriangle, Split } from "lucide-react";
+import { SearchAlert, Play, GitFork, Sparkles, Terminal, Info, AlertTriangle, Split, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 
@@ -75,11 +75,11 @@ export function ExecutionActionPanel({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/dashboard/alternatives?execution=${execution.id}`)}
-            className="font-mono text-xs border-purple-500/30 text-purple-300 hover:bg-purple-500/10 justify-center"
+            onClick={() => router.push(`/dashboard/export?execution=${execution.id}`)}
+            className="font-mono text-xs border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10 justify-center"
           >
-            <Split className="h-3.5 w-3.5 mr-1.5" />
-            <span>Alternatives</span>
+            <Download className="h-3.5 w-3.5 mr-1.5 text-emerald-400" />
+            <span>Export & Report (.txt)</span>
           </Button>
         </div>
       </div>

@@ -27,6 +27,8 @@ import {
   Plus,
   History,
   GitFork,
+  Download,
+  Network,
 } from "lucide-react";
 import { BlackBoxLogo } from "@/components/ui/BlackBoxLogo";
 
@@ -123,6 +125,13 @@ export function Sidebar({ className, isMobileOpen, onMobileClose }: SidebarProps
           badgeColor: "bg-white/[0.06] text-zinc-300 border-white/[0.08]",
         },
         {
+          title: "Multi-Agent",
+          href: "/dashboard/multi-agent",
+          icon: Network,
+          badge: "Swarm",
+          badgeColor: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+        },
+        {
           title: "Comparisons",
           href: "/dashboard/comparisons",
           icon: GitCompare,
@@ -144,6 +153,13 @@ export function Sidebar({ className, isMobileOpen, onMobileClose }: SidebarProps
           href: "/dashboard/alternatives",
           icon: GitFork,
           badge: null,
+        },
+        {
+          title: "Download / Export",
+          href: "/dashboard/export",
+          icon: Download,
+          badge: "New",
+          badgeColor: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
         },
         {
           title: "Integrations",
