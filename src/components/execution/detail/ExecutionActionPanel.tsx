@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Execution } from "@/types";
-import { SearchAlert, Play, GitFork, Sparkles, Terminal, Info, AlertTriangle } from "lucide-react";
+import { SearchAlert, Play, GitFork, Sparkles, Terminal, Info, AlertTriangle, Split } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 
@@ -15,6 +16,7 @@ export function ExecutionActionPanel({
   execution,
   onOpenStepDetail,
 }: ExecutionActionPanelProps) {
+  const router = useRouter();
   const [activeModal, setActiveModal] = React.useState<
     "investigate" | "replay" | "compare" | null
   >(null);
@@ -35,39 +37,49 @@ export function ExecutionActionPanel({
         </div>
 
         <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-          Launch automated root-cause audits, simulate sandbox replays, or diff against historical golden runs.
+          Launch automated root-cause audits, simulate sandbox replays, diff against golden runs, or evaluate fallback providers.
         </p>
 
         {/* Buttons Grid */}
-        <div className="flex flex-col sm:flex-row gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setActiveModal("investigate")}
-            className="flex-1 font-mono text-xs border-amber-500/40 text-amber-300 hover:bg-amber-500/10 justify-center"
+            className="font-mono text-xs border-amber-500/40 text-amber-300 hover:bg-amber-500/10 justify-center"
           >
             <SearchAlert className="h-3.5 w-3.5 mr-1.5" />
-            <span>Investigate Step</span>
+            <span>AI Diagnosis</span>
           </Button>
 
           <Button
             variant="outline"
             size="sm"
             onClick={() => setActiveModal("replay")}
-            className="flex-1 font-mono text-xs border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 justify-center"
+            className="font-mono text-xs border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 justify-center"
           >
             <Play className="h-3.5 w-3.5 mr-1.5" />
-            <span>Replay from Step 73</span>
+            <span>Sandbox Replay</span>
           </Button>
 
           <Button
             variant="outline"
             size="sm"
             onClick={() => setActiveModal("compare")}
-            className="flex-1 font-mono text-xs border-white/10 text-zinc-200 hover:bg-white/[0.06] justify-center"
+            className="font-mono text-xs border-white/10 text-zinc-200 hover:bg-white/[0.06] justify-center"
           >
             <GitFork className="h-3.5 w-3.5 mr-1.5" />
-            <span>Compare with Run</span>
+            <span>Compare Runs</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/dashboard/alternatives?execution=${execution.id}`)}
+            className="font-mono text-xs border-purple-500/30 text-purple-300 hover:bg-purple-500/10 justify-center"
+          >
+            <Split className="h-3.5 w-3.5 mr-1.5" />
+            <span>Alternatives</span>
           </Button>
         </div>
       </div>
@@ -81,18 +93,19 @@ export function ExecutionActionPanel({
         maxWidth="md"
         footer={
           <div className="flex items-center justify-between w-full">
-            <span className="text-[11px] font-mono text-zinc-500">
-              Analysis Engine Ready
-            </span>
+            <Button variant="ghost" size="sm" onClick={() => setActiveModal(null)}>
+              Cancel
+            </Button>
             <Button
               variant="primary"
               size="sm"
               onClick={() => {
                 setActiveModal(null);
-                if (onOpenStepDetail) onOpenStepDetail();
+                router.push(`/dashboard/diagnoses?execution=${execution.id}`);
               }}
+              className="bg-amber-600 hover:bg-amber-500 text-white"
             >
-              Focus Step 73 Inspector
+              Open Full AI Diagnosis
             </Button>
           </div>
         }
@@ -104,7 +117,7 @@ export function ExecutionActionPanel({
           </div>
           <p className="font-sans text-zinc-400">
             Output deviated from nominal executions due to unexpected numerical tolerance drift.
-            You can inspect the local 3-step transition window or trigger a sandbox replay with parameter corrections.
+            You can inspect the full root-cause analysis tree, heuristic evidence signals, and recommended code patches.
           </p>
         </div>
       </Modal>
@@ -118,11 +131,19 @@ export function ExecutionActionPanel({
         maxWidth="md"
         footer={
           <div className="flex items-center justify-between w-full">
-            <span className="text-[11px] font-mono text-zinc-500">
-              Frontend Simulation Mode
-            </span>
-            <Button variant="primary" size="sm" onClick={() => setActiveModal(null)}>
-              Close
+            <Button variant="ghost" size="sm" onClick={() => setActiveModal(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setActiveModal(null);
+                router.push(`/dashboard/replays?executionId=${execution.id}`);
+              }}
+              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold"
+            >
+              Open Replay Sandbox
             </Button>
           </div>
         }
@@ -132,11 +153,8 @@ export function ExecutionActionPanel({
             Deterministic step snapshot captured for Step 73.
           </div>
           <p className="font-sans text-zinc-400">
-            Replay sandbox execution will fork agent memory state at Step 73, apply suggested prompt modifications, and simulate downstream finalization.
+            Replay sandbox will fork agent memory state at Step 73, apply suggested prompt modifications or schema fixes, and simulate downstream healing without re-running prior steps.
           </p>
-          <div className="p-2.5 rounded bg-black/40 border border-white/[0.05] text-[11px] text-zinc-500">
-            ℹ Replay engine execution will be available in the upcoming Replay phase.
-          </div>
         </div>
       </Modal>
 
@@ -149,11 +167,19 @@ export function ExecutionActionPanel({
         maxWidth="md"
         footer={
           <div className="flex items-center justify-between w-full">
-            <span className="text-[11px] font-mono text-zinc-500">
-              Comparison Engine
-            </span>
-            <Button variant="primary" size="sm" onClick={() => setActiveModal(null)}>
-              Close
+            <Button variant="ghost" size="sm" onClick={() => setActiveModal(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setActiveModal(null);
+                router.push(`/dashboard/comparisons?target=${execution.id}&baseline=EX-2047`);
+              }}
+              className="bg-white text-zinc-950 hover:bg-zinc-200 font-semibold"
+            >
+              Open Run Comparison
             </Button>
           </div>
         }

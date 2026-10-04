@@ -26,10 +26,25 @@ import { EmptyState } from "@/components/ui/empty-state";
 
 export default function HistoryPage() {
   const { mode, triggerRetry } = useDemoState();
-  const [activities] = React.useState<ActivityRecord[]>(MOCK_ACTIVITY_LOG);
+  const [activities, setActivities] = React.useState<ActivityRecord[]>(MOCK_ACTIVITY_LOG);
   const [selectedActivity, setSelectedActivity] =
     React.useState<ActivityRecord | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = JSON.parse(localStorage.getItem("blackbox_custom_activities") || "[]");
+        if (stored.length > 0) {
+          setActivities((prev) => {
+            const existingIds = new Set(prev.map((a) => a.id));
+            const newOnes = stored.filter((a: any) => !existingIds.has(a.id));
+            return [...newOnes, ...prev];
+          });
+        }
+      } catch {}
+    }
+  }, []);
 
   // Filter States
   const [searchQuery, setSearchQuery] = React.useState("");

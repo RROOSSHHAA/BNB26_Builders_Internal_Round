@@ -20,7 +20,8 @@ import {
   Clock,
   Loader2,
 } from "lucide-react";
-import { ReplayInvestigation, ReplayModificationType } from "@/types";
+import { useRouter } from "next/navigation";
+import { ReplayInvestigation, ReplayModificationType, Execution } from "@/types";
 import { CheckpointFlowIndicator } from "./CheckpointFlowIndicator";
 import { OriginalVsReplayMap } from "./OriginalVsReplayMap";
 import { SafetyNotice } from "./SafetyNotice";
@@ -29,18 +30,29 @@ interface CreateReplayWizardProps {
   isOpen: boolean;
   onClose: () => void;
   onCompleteReplay: (newReplay: ReplayInvestigation) => void;
+  initialExecutionId?: string;
 }
 
 export function CreateReplayWizard({
   isOpen,
   onClose,
   onCompleteReplay,
+  initialExecutionId,
 }: CreateReplayWizardProps) {
+  const router = useRouter();
   // Wizard Steps: 1: Select Exec, 2: Select Checkpoint, 3: Local Context, 4: Modify, 5: Preview & Run
   const [currentStep, setCurrentStep] = React.useState<1 | 2 | 3 | 4 | 5>(1);
 
   // Configuration State
-  const [selectedExecutionId, setSelectedExecutionId] = React.useState<string>("EX-2048");
+  const [selectedExecutionId, setSelectedExecutionId] = React.useState<string>(
+    initialExecutionId || "EX-2048"
+  );
+
+  React.useEffect(() => {
+    if (initialExecutionId) {
+      setSelectedExecutionId(initialExecutionId);
+    }
+  }, [initialExecutionId]);
   const [selectedCheckpoint, setSelectedCheckpoint] = React.useState<number>(70);
   const [selectedTargetStep, setSelectedTargetStep] = React.useState<number>(73);
   const [modificationType, setModificationType] =
@@ -208,6 +220,27 @@ export function CreateReplayWizard({
         { name: "Finalization", range: "79–127", status: "ok" },
       ],
     };
+
+    if (typeof window !== "undefined") {
+      try {
+        const stored = JSON.parse(localStorage.getItem("blackbox_custom_replays") || "[]");
+        localStorage.setItem("blackbox_custom_replays", JSON.stringify([newReplay, ...stored]));
+
+        // Log audit event to History
+        const acts = JSON.parse(localStorage.getItem("blackbox_custom_activities") || "[]");
+        const newAct = {
+          id: `act_${Date.now()}`,
+          title: `Sandbox Replay Succeeded: ${activeExecution.id}`,
+          description: `Deterministic state fork recovered Step ${selectedTargetStep} (Validation Divergence). Full execution healed.`,
+          category: "replay",
+          timestamp: new Date().toISOString(),
+          group: "today",
+          actor: "Lead SRE",
+          executionId: activeExecution.id,
+        };
+        localStorage.setItem("blackbox_custom_activities", JSON.stringify([newAct, ...acts]));
+      } catch {}
+    }
 
     onCompleteReplay(newReplay);
     onClose();
@@ -825,13 +858,26 @@ export function CreateReplayWizard({
             )}
 
             {isComplete && (
-              <button
-                onClick={handleFinishAndSave}
-                className="inline-flex items-center gap-2 rounded-md border border-cyan-500/40 bg-cyan-500/15 px-5 py-2 font-bold text-cyan-300 hover:bg-cyan-500/25 hover:border-cyan-500/60 transition-all shadow-xs"
-              >
-                <Check className="h-3.5 w-3.5" />
-                <span>Save Investigation to List</span>
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={handleFinishAndSave}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-semibold text-zinc-200 hover:bg-white/20 transition-all"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Save Investigation</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    handleFinishAndSave();
+                    router.push(`/dashboard/comparisons?target=${activeExecution.id}&baseline=EX-2047`);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-xs font-bold text-white hover:from-cyan-400 hover:to-blue-500 transition-all shadow-md"
+                >
+                  <span>Compare with Golden Run</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
             )}
           </div>
         </div>

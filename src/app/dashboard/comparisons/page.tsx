@@ -68,8 +68,50 @@ function ComparisonsContent() {
   const [isWizardOpen, setIsWizardOpen] = React.useState(false);
   const [simulateEmpty, setSimulateEmpty] = React.useState(false);
 
-  // Synchronize initialId if it changes
+  const targetParam = searchParams.get("target") || searchParams.get("execution");
+  const baselineParam = searchParams.get("baseline");
+
+  // Synchronize initialId or targetParam if it changes
   React.useEffect(() => {
+    if (targetParam) {
+      const match = comparisons.find(
+        (c) =>
+          c.leftExecution.id.toLowerCase() === targetParam.toLowerCase() ||
+          c.id.toLowerCase().includes(targetParam.toLowerCase())
+      );
+      if (match) {
+        setSelectedComparison(match);
+        const divReg =
+          match.regions.find((r) => r.name === match.divergenceRegion) ||
+          match.regions[0] ||
+          null;
+        setSelectedRegion(divReg);
+      } else {
+        const base = comparisons[0];
+        const cloned: ComparisonInvestigation = {
+          ...base,
+          id: `cmp_${targetParam.toLowerCase()}`,
+          title: `${targetParam} (Failed Run) vs ${baselineParam || "EX-2047"} (Golden Baseline)`,
+          leftExecution: {
+            ...base.leftExecution,
+            id: targetParam,
+            label: `${targetParam} (Target Run)`,
+            status: "FAILED",
+          },
+          rightExecution: {
+            ...base.rightExecution,
+            id: baselineParam || "EX-2047",
+            label: `${baselineParam || "EX-2047"} (Golden Baseline)`,
+            status: "SUCCESS",
+          },
+        };
+        setComparisons((prev) => [cloned, ...prev]);
+        setSelectedComparison(cloned);
+        setSelectedRegion(cloned.regions[0]);
+      }
+      return;
+    }
+
     if (initialId) {
       const found = comparisons.find((c) => c.id === initialId);
       if (found) {
@@ -81,7 +123,7 @@ function ComparisonsContent() {
         setSelectedRegion(divReg);
       }
     }
-  }, [initialId, comparisons]);
+  }, [initialId, targetParam, baselineParam, comparisons]);
 
   const activeComparison = selectedComparison || comparisons[0];
 

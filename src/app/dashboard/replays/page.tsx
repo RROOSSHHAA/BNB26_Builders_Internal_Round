@@ -13,6 +13,7 @@ import { ReplayDetailDrawer } from "@/components/replay/ReplayDetailDrawer";
 import { CreateReplayWizard } from "@/components/replay/CreateReplayWizard";
 import { SafetyNotice } from "@/components/replay/SafetyNotice";
 import { ReplayEmptyState } from "@/components/replay/ReplayEmptyState";
+import { useSearchParams } from "next/navigation";
 import {
   Play,
   ArrowRight,
@@ -28,7 +29,9 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { EmptyState } from "@/components/ui/empty-state";
 
-export default function ReplaysPage() {
+function ReplaysContent() {
+  const searchParams = useSearchParams();
+  const targetExecutionId = searchParams.get("executionId") || searchParams.get("execution");
   const { mode, triggerRetry } = useDemoState();
   const [replays, setReplays] = React.useState<ReplayInvestigation[]>(
     MOCK_REPLAY_INVESTIGATIONS
@@ -36,8 +39,26 @@ export default function ReplaysPage() {
   const [selectedReplay, setSelectedReplay] =
     React.useState<ReplayInvestigation | null>(MOCK_REPLAY_INVESTIGATIONS[0]);
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = React.useState(false);
-  const [isWizardOpen, setIsWizardOpen] = React.useState(false);
+  const [isWizardOpen, setIsWizardOpen] = React.useState(Boolean(targetExecutionId));
   const [simulateEmpty, setSimulateEmpty] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = JSON.parse(localStorage.getItem("blackbox_custom_replays") || "[]");
+        if (stored.length > 0) {
+          setReplays((prev) => {
+            const existingIds = new Set(prev.map((r) => r.id));
+            const newOnes = stored.filter((r: ReplayInvestigation) => !existingIds.has(r.id));
+            return [...newOnes, ...prev];
+          });
+        }
+      } catch {}
+    }
+    if (targetExecutionId) {
+      setIsWizardOpen(true);
+    }
+  }, [targetExecutionId]);
 
   // 1. Loading State
   if (mode === "loading") {
@@ -333,6 +354,7 @@ export default function ReplaysPage() {
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
         onCompleteReplay={handleCompleteNewReplay}
+        initialExecutionId={targetExecutionId || undefined}
       />
 
       {/* Detail Drawer for Inspecting Replays */}
@@ -342,5 +364,19 @@ export default function ReplaysPage() {
         onClose={() => setIsDetailDrawerOpen(false)}
       />
     </div>
+  );
+}
+
+export default function ReplaysPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="p-12 text-center text-xs font-sans text-zinc-400">
+          Loading replay sandbox telemetry...
+        </div>
+      }
+    >
+      <ReplaysContent />
+    </React.Suspense>
   );
 }

@@ -50,12 +50,54 @@ function DiagnosesContent() {
   });
 
   // Find initial diagnosis based on query param or default to EX-2048
-  const initialDiagnosis = React.useMemo(() => {
+  const initialDiagnosis = React.useMemo<Diagnosis>(() => {
     if (targetExecutionId) {
       const match = MOCK_DIAGNOSES.find(
         (d) => d.executionId.toLowerCase() === targetExecutionId.toLowerCase()
       );
       if (match) return match;
+
+      return {
+        id: `diag_${targetExecutionId.toLowerCase()}`,
+        executionId: targetExecutionId,
+        agentName: "Autonomous Agent",
+        agentId: "agt_custom",
+        framework: "LangChain",
+        title: "Tool Execution Crash & Missing Column Constraint",
+        rootCauseType: "tool_schema_mismatch",
+        failureCategory: "Tool Execution Divergence",
+        subcategory: "Relation Column Missing",
+        suspiciousStepNumber: 3,
+        suspiciousStepTitle: "Schema Migration Lock",
+        confidenceScore: 0.94,
+        confidenceLabel: "High Confidence",
+        explanation: `Execution ${targetExecutionId} crashed during step 3 execution due to an unhandled database schema mismatch: column 'user_tier' does not exist in target relation.`,
+        evidence: [
+          "Database error code 42703: undefined_column",
+          "Divergence detected at Step 3 (0.94 probability of root failure)",
+          "Subsequent validation steps skipped due to unhandled fatal exception",
+        ],
+        evidenceSignals: [
+          { name: "Schema Definition Drift", level: "High", percentage: 94 },
+          { name: "Memory Checkpoint Desync", level: "Moderate", percentage: 72 },
+          { name: "Token Variance", level: "Low", percentage: 18 },
+        ],
+        affectedStepRange: [3, 4],
+        affectedRegionId: "reg-3",
+        affectedRegionName: "Schema Patch",
+        downstreamImpact: {
+          affectedRegionsCount: 1,
+          affectedStepsCount: 2,
+          description: "Subsequent transaction commit and validation failed to execute.",
+        },
+        recommendedFix: {
+          action: "Execute ALTER TABLE migration to add column 'user_tier VARCHAR(50)' before lock acquisition.",
+          promptDiff: "ALTER TABLE users ADD COLUMN user_tier VARCHAR(50);",
+        },
+        simulatedRecoveryRate: 0.99,
+        detectedAt: new Date().toISOString(),
+        status: "failed",
+      };
     }
     if (targetDiagId) {
       const match = MOCK_DIAGNOSES.find((d) => d.id === targetDiagId);
@@ -63,6 +105,18 @@ function DiagnosesContent() {
     }
     return MOCK_DIAGNOSES[0];
   }, [targetExecutionId, targetDiagId]);
+
+  const allAvailableDiagnoses = React.useMemo(() => {
+    if (
+      targetExecutionId &&
+      !MOCK_DIAGNOSES.some(
+        (d) => d.executionId.toLowerCase() === targetExecutionId.toLowerCase()
+      )
+    ) {
+      return [initialDiagnosis, ...MOCK_DIAGNOSES];
+    }
+    return MOCK_DIAGNOSES;
+  }, [targetExecutionId, initialDiagnosis]);
 
   const [selectedDiagnosis, setSelectedDiagnosis] =
     React.useState<Diagnosis>(initialDiagnosis);
@@ -76,7 +130,7 @@ function DiagnosesContent() {
 
   // Client-side filtering
   const filteredDiagnoses = React.useMemo(() => {
-    return MOCK_DIAGNOSES.filter((diag) => {
+    return allAvailableDiagnoses.filter((diag) => {
       // Search query
       if (filters.search.trim()) {
         const q = filters.search.toLowerCase().trim();
