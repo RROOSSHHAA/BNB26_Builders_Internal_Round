@@ -30,6 +30,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useDemoState } from "@/context/DemoStateContext";
+import { AssignTaskModal } from "@/components/agent/AssignTaskModal";
 import { DetailSkeleton } from "@/components/ui/page-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 
@@ -39,25 +40,76 @@ export default function AgentDetailPage() {
   const { mode, triggerRetry } = useDemoState();
   const agentId = (params?.id as string) || "agt_research";
 
-  // Check if agent exists
+  const [isAssignTaskOpen, setIsAssignTaskOpen] = React.useState(false);
+  const [customAgents, setCustomAgents] = React.useState<Agent[]>([]);
+  const [customExecutions, setCustomExecutions] = React.useState<Execution[]>([]);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const storedAgents = JSON.parse(localStorage.getItem("blackbox_agents") || "[]");
+        setCustomAgents(storedAgents);
+
+        const storedExecs = JSON.parse(localStorage.getItem("blackbox_custom_executions") || "[]");
+        setCustomExecutions(storedExecs);
+      } catch {}
+    }
+  }, []);
+
+  // Check if agent exists in mock or local storage
   const matchedAgent = React.useMemo(() => {
-    return MOCK_AGENTS.find(
+    const all = [...customAgents, ...MOCK_AGENTS];
+    const found = all.find(
       (a) => a.id.toLowerCase() === agentId.toLowerCase() || a.slug === agentId.toLowerCase()
     );
-  }, [agentId]);
+    if (found) return found;
 
-  const agent: Agent = matchedAgent || MOCK_AGENTS[0];
+    // Zero-Crash Demo Protection: Synthesize agent profile if custom ID passed
+    const agentFallback: Agent = {
+      id: agentId,
+      name: agentId.startsWith("agt_")
+        ? `Autonomous Agent (${agentId.slice(0, 10)})`
+        : "Production AI Agent",
+      slug: agentId.toLowerCase(),
+      framework: "LangChain",
+      model: "GPT-4o",
+      status: "active",
+      totalExecutions: 1,
+      successRate: 100,
+      failureCount: 0,
+      successfulCount: 1,
+      anomalyRate: 0,
+      avgDurationMs: 3400,
+      lastRunAt: new Date().toISOString(),
+      description: "Autonomous production agent connected to BlackBox telemetry flight recorder.",
+      tags: ["langchain", "gpt-4o", "production", "live"],
+      environment: "Production",
+      recentHealth: [
+        { id: "h1", status: "ok" },
+        { id: "h2", status: "ok" },
+      ],
+      failureDistribution: [],
+    };
+    return agentFallback;
+  }, [agentId, customAgents]);
+
+  const agent: Agent = matchedAgent;
 
   // Find related executions for this agent
   const agentExecutions: Execution[] = React.useMemo(() => {
-    const matched = MOCK_EXECUTIONS.filter(
+    const allExecs = [...customExecutions, ...MOCK_EXECUTIONS];
+    const matched = allExecs.filter(
       (e) => e.agentId === agent.id || e.agentName.toLowerCase().includes(agent.name.toLowerCase())
     );
     if (matched.length > 0) return matched;
-    return MOCK_EXECUTIONS.slice(0, 3);
-  }, [agent]);
+    return allExecs.slice(0, 3);
+  }, [agent, customExecutions]);
 
   const latestExecution = agentExecutions[0] || MOCK_EXECUTIONS[0];
+
+  const handleTaskExecuted = (newExec: Execution) => {
+    setCustomExecutions((prev) => [newExec, ...prev]);
+  };
 
   // Loading state
   if (mode === "loading") {
@@ -68,20 +120,20 @@ export default function AgentDetailPage() {
     );
   }
 
-  // Not found or Error state
-  if (!matchedAgent || mode === "error") {
+  // Error state only if mode explicitly sets error
+  if (mode === "error") {
     return (
       <div className="space-y-6 w-full max-w-3xl mx-auto pt-10 pb-16 font-sans">
         <ErrorState
-          title="Agent not found"
-          message={`Agent telemetry profile "${agentId}" could not be located in workspace Cham Cham.`}
+          title="Agent Telemetry Disrupted"
+          message={`Unable to connect to live telemetry flight recorder stream for agent "${agentId}".`}
           details={{
             queriedAgentId: agentId,
             workspace: "cham-cham",
             lookupTimestamp: new Date().toISOString(),
           }}
           onRetry={triggerRetry}
-          retryLabel="Retry Lookup"
+          retryLabel="Retry Connection"
           secondaryAction={{
             label: "Back to Agents",
             href: "/dashboard/agents",
@@ -131,12 +183,22 @@ export default function AgentDetailPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-center">
+          <div className="flex items-center gap-2.5 self-start sm:self-center">
             <Link href={`/dashboard/executions?agent=${agent.id}`}>
               <Button variant="outline" size="sm" className="font-sans font-medium text-xs border-white/[0.08] text-zinc-200 hover:border-white/20 hover:text-white">
                 <span>View Traces</span>
               </Button>
             </Link>
+
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setIsAssignTaskOpen(true)}
+              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold flex items-center gap-1.5 shadow-lg shadow-cyan-950/40 text-xs"
+            >
+              <Play className="h-3.5 w-3.5 fill-white" />
+              <span>Assign Task & Test</span>
+            </Button>
           </div>
         </div>
 
@@ -257,6 +319,14 @@ export default function AgentDetailPage() {
 
       {/* 6. Recent Agent Executions List */}
       <AgentRecentExecutions executions={agentExecutions} agentName={agent.name} />
+
+      {/* 7. Assign Task & Test Modal */}
+      <AssignTaskModal
+        isOpen={isAssignTaskOpen}
+        onClose={() => setIsAssignTaskOpen(false)}
+        agent={agent}
+        onTaskExecuted={handleTaskExecuted}
+      />
     </div>
   );
 }

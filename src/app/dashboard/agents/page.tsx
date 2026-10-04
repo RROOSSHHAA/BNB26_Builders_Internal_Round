@@ -22,6 +22,21 @@ export default function AgentsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [simulateEmpty, setSimulateEmpty] = React.useState(false);
 
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = JSON.parse(localStorage.getItem("blackbox_agents") || "[]");
+        if (stored.length > 0) {
+          setAgents((prev) => {
+            const existingIds = new Set(prev.map((a) => a.id));
+            const newOnes = stored.filter((a: Agent) => !existingIds.has(a.id));
+            return [...newOnes, ...prev];
+          });
+        }
+      } catch {}
+    }
+  }, []);
+
   const [filters, setFilters] = React.useState<AgentFilterState>({
     search: "",
     status: "all",

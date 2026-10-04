@@ -74,6 +74,14 @@ export function AddAgentModal({
       }).catch(() => {});
     } catch {}
 
+    // Save locally for persistent retrieval across all pages
+    if (typeof window !== "undefined") {
+      try {
+        const stored = JSON.parse(localStorage.getItem("blackbox_agents") || "[]");
+        localStorage.setItem("blackbox_agents", JSON.stringify([newAgent, ...stored]));
+      } catch {}
+    }
+
     onAddAgent(newAgent);
     setIsSubmitting(false);
     onClose();
