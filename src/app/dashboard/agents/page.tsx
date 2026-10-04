@@ -7,9 +7,10 @@ import { Agent } from "@/types";
 import { AgentCard } from "@/components/agent/AgentCard";
 import { AgentFilterBar, AgentFilterState } from "@/components/agent/AgentFilterBar";
 import { AddAgentModal } from "@/components/agent/AddAgentModal";
+import { ImportAgentModal } from "@/components/agent/ImportAgentModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Bot, Radio, RotateCcw, FilterX } from "lucide-react";
+import { Plus, Bot, Radio, RotateCcw, FilterX, UploadCloud } from "lucide-react";
 import { useDemoState } from "@/context/DemoStateContext";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
@@ -20,6 +21,7 @@ export default function AgentsPage() {
   const { mode, triggerRetry } = useDemoState();
   const [agents, setAgents] = React.useState<Agent[]>(MOCK_AGENTS);
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = React.useState(false);
   const [simulateEmpty, setSimulateEmpty] = React.useState(false);
 
   React.useEffect(() => {
@@ -195,6 +197,16 @@ export default function AgentsPage() {
           </button>
 
           <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsImportModalOpen(true)}
+            className="font-sans font-medium text-xs border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 hover:border-cyan-400 flex items-center gap-1.5 shadow-sm"
+          >
+            <UploadCloud className="h-3.5 w-3.5 text-cyan-400" />
+            <span>Upload / BYO Agent</span>
+          </Button>
+
+          <Button
             variant="primary"
             size="sm"
             onClick={() => setIsAddModalOpen(true)}
@@ -299,6 +311,13 @@ export default function AgentsPage() {
       <AddAgentModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
+        onAddAgent={handleAddAgent}
+      />
+
+      {/* 6. Upload / Bring Your Own Agent Modal */}
+      <ImportAgentModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
         onAddAgent={handleAddAgent}
       />
     </div>
