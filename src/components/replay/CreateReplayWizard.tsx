@@ -26,6 +26,7 @@ import { CheckpointFlowIndicator } from "./CheckpointFlowIndicator";
 import { OriginalVsReplayMap } from "./OriginalVsReplayMap";
 import { DirectModelFixAndDownloadBox } from "./DirectModelFixAndDownloadBox";
 import { SafetyNotice } from "./SafetyNotice";
+import { recordFixedIncidentFromReplay } from "@/lib/fixed-exports";
 
 interface CreateReplayWizardProps {
   isOpen: boolean;
@@ -239,7 +240,8 @@ export function CreateReplayWizard({
           actor: "Lead SRE",
           executionId: activeExecution.id,
         };
-        localStorage.setItem("blackbox_custom_activities", JSON.stringify([newAct, ...acts]));
+        // 3. Automatically record fixed incident to Download / Export Center
+        recordFixedIncidentFromReplay(newReplay);
       } catch {}
     }
 
@@ -925,6 +927,17 @@ export function CreateReplayWizard({
                 >
                   <Check className="h-3.5 w-3.5" />
                   <span>Save Investigation</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    handleFinishAndSave();
+                    router.push(`/dashboard/export?executionId=${activeExecution.id}`);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/40 bg-emerald-500/20 px-3.5 py-2 text-xs font-bold text-emerald-200 hover:bg-emerald-500/30 transition-all shadow-xs"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>Download Fixed Agent & Report (.txt)</span>
                 </button>
 
                 <button

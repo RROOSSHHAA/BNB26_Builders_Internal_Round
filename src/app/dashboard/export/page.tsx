@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Download,
   FileText,
@@ -23,16 +24,23 @@ import {
   ChevronRight,
   Server,
   FolderArchive,
-  Container,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/context/ToastContext";
 import { redactSensitiveText, redactSensitiveData } from "@/lib/security";
+import {
+  getFixedIncidents,
+  DEFAULT_FIXED_INCIDENTS,
+  FixedAgentIncident,
+} from "@/lib/fixed-exports";
 
-export default function ExportPage() {
+function ExportContent() {
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
+  const [incidents, setIncidents] = React.useState<FixedAgentIncident[]>(DEFAULT_FIXED_INCIDENTS);
   const [selectedExecutionId, setSelectedExecutionId] = React.useState<string>("EX-2048");
   const [activePackageTab, setActivePackageTab] = React.useState<"json" | "python" | "prompt" | "yaml">("json");
   const [activeMlTab, setActiveMlTab] = React.useState<
@@ -41,62 +49,37 @@ export default function ExportPage() {
   const [copiedSection, setCopiedSection] = React.useState<string | null>(null);
   const [downloadNotice, setDownloadNotice] = React.useState<string | null>(null);
 
-  // Available sample incidents
-  const incidentOptions = [
-    {
-      id: "EX-2048",
-      agentName: "Research Agent",
-      framework: "CrewAI",
-      model: "Demo Reasoning Model",
-      failedStep: 73,
-      modelVersion: "Diagnosis Model v2.0 - Causal Graph Net",
-      errorDetected: "ValidationError: date_window [2026-11-01, 2026-12-31] exceeds temporal horizon",
-      rootCause: "Agent model generated an unbounded forecast horizon in tool arguments without schema boundary checks.",
-      evidence: 'Step 73 payload: {"date_window": ["2026-11-01", "2026-12-31"], "clamp": false} returned HTTP 422 Unprocessable Entity.',
-      originalDecision: 'Attempted to parse unvalidated future-dated earnings report; failed downstream synthesis for 54 steps.',
-      correctedDecision: 'Applied strict date clamp [T-30d, T+0] and injected schema validation fallback at checkpoint Step 70.',
-      replayResult: 'Alternative simulation converged at Step 74 with 0 temporal divergence cascade (100% Deterministic match).',
-      finalResult: 'FAILED (Original) -> SUCCESS (Replay Verified)',
-      changesMade: 'Patched system prompt with boundary clamping directives; updated tool schema in agent configuration; enabled 3-attempt exponential backoff retry policy.',
-      recommendations: '1. Enforce strict JSON schema validation on all date-related arguments.\n2. Bind pre-invocation clamping guardrails before external tool dispatch.\n3. Integrate BlackBox Flight Recorder SDK to capture trace vectors and halt runaway divergence early.',
-    },
-    {
-      id: "EX-2037",
-      agentName: "Recommendation Agent",
-      framework: "LangChain",
-      model: "GPT-4o",
-      failedStep: 41,
-      modelVersion: "Diagnosis Model v1.1 - Bayesian Tracer",
-      errorDetected: "TimeoutException: Vector search retrieval exceeded 5000ms SLA",
-      rootCause: "High-dimensional vector embeddings search timed out on non-indexed shard during peak volatility.",
-      evidence: 'Step 41 trace vector: latencyMs=5120ms (Threshold=3000ms), socket_hangup: true.',
-      originalDecision: 'Blocked entire recommendation pipeline waiting on synchronous vector cluster response.',
-      correctedDecision: 'Switched to tiered cache retrieval with secondary RAG index fallback and 1.5s timeout threshold.',
-      replayResult: 'Replayed from Step 38; fallback index responded in 240ms; downstream ranking nominal.',
-      finalResult: 'FAILED (Original) -> SUCCESS (Replay Verified)',
-      changesMade: 'Added dual-tier vector search fallback; updated LangChain retrieval chain with circuit-breaker pattern.',
-      recommendations: '1. Configure multi-tier RAG caches for low-latency queries.\n2. Wrap external vector search calls in circuit breakers with degraded-mode fallbacks.\n3. Monitor p99 latency in BlackBox Flight Recorder.',
-    },
-    {
-      id: "EX-2044",
-      agentName: "Customer Support Agent",
-      framework: "AutoGen",
-      model: "Claude 3.5 Sonnet",
-      failedStep: 92,
-      modelVersion: "Diagnosis Model v2.0 - Causal Graph Net",
-      errorDetected: "SchemaFormatMismatch: Missing mandatory customer_id in CRM mutation",
-      rootCause: "Prompt extraction missed secondary entity reference in multi-turn customer conversation.",
-      evidence: 'Step 92 payload: {"ticket_id": "TCK-8812", "action": "ESCALATE"} missing required key "customer_id".',
-      originalDecision: 'Attempted CRM patch with incomplete payload; rejected with HTTP 400 Bad Request.',
-      correctedDecision: 'Injected state recovery step extracting customer_id from conversational history buffer.',
-      replayResult: 'Replayed from Step 90; customer_id resolved; CRM mutation succeeded with 200 OK.',
-      finalResult: 'FAILED (Original) -> SUCCESS (Replay Verified)',
-      changesMade: 'Hardened conversation state buffer; enforced mandatory schema validation before API dispatch.',
-      recommendations: '1. Use typed Pydantic models for CRM mutations.\n2. Add entity verification pre-flight hook in BlackBox agent wrapper.',
-    },
-  ];
+  // Sync incidents from storage & URL parameters
+  React.useEffect(() => {
+    const allIncidents = getFixedIncidents();
+    setIncidents(allIncidents);
 
-  const currentIncident = incidentOptions.find((i) => i.id === selectedExecutionId) || incidentOptions[0];
+    const queryExecId = searchParams.get("executionId") || searchParams.get("incident") || searchParams.get("id");
+    if (queryExecId) {
+      const match = allIncidents.find(
+        (i) =>
+          i.id.toLowerCase() === queryExecId.toLowerCase() ||
+          (i.replayId && i.replayId.toLowerCase() === queryExecId.toLowerCase())
+      );
+      if (match) {
+        setSelectedExecutionId(match.id);
+        return;
+      }
+    }
+
+    // Default to last fixed replay incident if available
+    if (typeof window !== "undefined") {
+      try {
+        const lastFixed = localStorage.getItem("blackbox_last_fixed_incident_id");
+        if (lastFixed && allIncidents.some((i) => i.id === lastFixed)) {
+          setSelectedExecutionId(lastFixed);
+        }
+      } catch {}
+    }
+  }, [searchParams]);
+
+  const currentIncident: FixedAgentIncident =
+    incidents.find((i) => i.id === selectedExecutionId) || incidents[0] || DEFAULT_FIXED_INCIDENTS[0];
 
   // 1. Structured RFC-Standard Error Report (.TXT) with Redaction
   const rawErrorReport = `================================================================================
@@ -177,7 +160,8 @@ Black Box Observability Suite · https://blackbox.ai
     diagnosis_model_version: currentIncident.modelVersion,
     timestamp: new Date().toISOString(),
     security_sanitization: "STRICT_REDACTED",
-    disclaimer: "Contains corrected runtime configuration, workflow guardrails, prompts and tool schemas. Does not contain proprietary model weights.",
+    disclaimer:
+      "Contains corrected runtime configuration, workflow guardrails, prompts and tool schemas. Does not contain proprietary model weights.",
     verification_status: {
       replay_pass_rate: "100%",
       original_divergence_resolved: true,
@@ -471,14 +455,70 @@ CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080"]
           <select
             value={selectedExecutionId}
             onChange={(e) => setSelectedExecutionId(e.target.value)}
-            className="rounded-lg border border-white/10 bg-[#0e121b] px-3 py-1.5 text-xs font-mono text-white focus:border-cyan-500 focus:outline-none"
+            className="rounded-lg border border-white/10 bg-[#0e121b] px-3 py-1.5 text-xs font-mono text-white focus:border-cyan-500 focus:outline-none max-w-[280px] sm:max-w-none truncate"
           >
-            {incidentOptions.map((inc) => (
+            {incidents.map((inc) => (
               <option key={inc.id} value={inc.id}>
-                {inc.id} ({inc.agentName}) — Step {inc.failedStep}
+                {inc.isCustomReplayFix ? "✨ " : ""}{inc.id} ({inc.agentName}) — Step {inc.failedStep}
               </option>
             ))}
           </select>
+        </div>
+      </div>
+
+      {/* Freshly Fixed Agent Model Callout Banner */}
+      <div className="p-4 rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-[#0e171b] to-[#0a1219] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-sans">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
+            <Zap className="w-4 h-4 text-emerald-300 fill-current" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-white text-sm">
+                {currentIncident.agentName} (Execution {currentIncident.id})
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">
+                REPLAY FIX VERIFIED
+              </span>
+            </div>
+            <p className="text-zinc-300 text-xs mt-0.5">
+              Patched at <strong className="text-white">Step {currentIncident.failedStep}</strong>. The corrected agent model configuration and the formal audit error report (.txt) are generated below.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              handleDownload(
+                `${currentIncident.agentName.toLowerCase().replace(/\s+/g, "_")}_fixed_config.json`,
+                agentPackageJson,
+                "application/json"
+              )
+            }
+            className="text-xs font-mono border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 h-8"
+          >
+            <Download className="w-3 h-3 mr-1.5" />
+            <span>Config (.JSON)</span>
+          </Button>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() =>
+              handleDownload(
+                `incident_report_${currentIncident.id.toLowerCase()}.txt`,
+                errorReportText,
+                "text/plain"
+              )
+            }
+            className="text-xs font-mono bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white h-8"
+          >
+            <Download className="w-3 h-3 mr-1.5" />
+            <span>Report (.TXT)</span>
+          </Button>
         </div>
       </div>
 
@@ -749,7 +789,6 @@ CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080"]
               variant="default"
               size="sm"
               onClick={() => {
-                // Download complete bundle manifest script
                 const bundleScript = `#!/bin/bash
 # Black Box ML Diagnosis Package Downloader
 echo "📦 Downloading Black Box ML Diagnosis Package v2.0..."
@@ -857,5 +896,19 @@ echo "✅ Black Box ML Package created at ./blackbox-ml-package"
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ExportPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="p-12 text-center text-xs font-mono text-zinc-400">
+          Loading Export Center telemetry...
+        </div>
+      }
+    >
+      <ExportContent />
+    </React.Suspense>
   );
 }
